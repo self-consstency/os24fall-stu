@@ -494,6 +494,14 @@ trap 处理程序根据 `scause` 的值，进入不同的处理逻辑，在本�
 
 完成此步后在工程根文件夹执行 make，可以看到不会再提示 Makefile 的错误，而是 C 或汇编代码中的 `#!c #error` 错误。
 
+!!! tip "可以使用 Cline 插件配合 Deepseek api 完成"
+    通过勾选 Auto-approve 扩展中的 Read project files 和 Edit project files 选项，即可实现参考其他文件夹的 Makefile 自动完成编译。Cline 也支持通过添加整个工程文件夹作为上下文来完成编译。
+    <p align="center">
+    <img src="img/auto-approve.png" alt="auto-approve" style="width: 50%;">
+    </p>
+
+!!! warning "makefile中一定需要使用`Tab`键作为开头而非4个空格，因此vscode需要正确设置，以免插件自动补全出错。"
+
 #### 编写 head.S
 
 学习 RISC-V 汇编，并完成 `arch/riscv/kernel/head.S`。
@@ -548,6 +556,14 @@ struct sbiret sbi_ecall(uint64_t eid, uint64_t fid,
 `printk` 会调用 `putc` 来输出单个字符，而其中调用了 `sbi_debug_console_write_byte`，所以为了使用 `printk` 请在 `sbi.c` 中正确利用 `sbi_ecall` 实现这个函数。
 
 `test.c` 中在 kernel 运行的结尾会调用 `sbi_system_reset(0, 0)` 来 shutdown，所以你也需要在 `sbi.c` 中正确实现 `sbi_system_reset`。
+
+!!! tip "关于 Cline 和 Lingma 的使用方法"
+    二者在 `sbi.c` 的补全上差异不大，注意在 Prompt 中加入函数定义和手册给出的 examples 即可。具体选择有：
+    1. 只添加本文件（.c文件作为插件的上下文），将函数定义复制到 Prompt 中；
+    2. 在插件交互聊天框将 .h 和 .c 文件都加入上下文；
+    3. Cline 在勾选 Auto-approve 中的 Read project files 后可以自动查看对应的头文件。
+
+    本步骤涉及到的其余 sbi function，可以一并加入 Prompt 并明确指示插件进行实现，使用 Deepseek-R1 可以更好地实现这些代码框架中没有提供定义的新函数，代价是更高的耗时。其余 base model 倾向于只实现.c文件中给出框架的函数。
 
 ??? note "关于 SBI 版本问题"
     曾经的实验文档中使用 `sbi_ecall(0x1, 0x0, 0x30, 0, 0, 0, 0, 0)` 达到了和 `sbi_ecall(0x4442434E, 0x2, 0x30, 0, 0, 0, 0, 0)` 一样的效果，并且 `sbi_set_timer` 等函数的 EID 都很小（0x00 - 0x0F），这些实际上都是 v0.1 的旧版 SBI 规范，目前称为 Legacy Extensions，已经弃用很久了。具体可见 [RISC-V Supervisor Binary Interface Specification](https://github.com/riscv-non-isa/riscv-sbi-doc/releases/download/v2.0/riscv-sbi.pdf) 的 Chapter 5。因此推荐大家均按照本文档要求使用新版 SBI 规范。
@@ -745,6 +761,13 @@ kernel is running!
 kernel is running!
 [S] Supervisor Mode Timer Interrupt
 ```
+
+!!! tip "尝试借助 AI 插件完成编译"
+    完成所有的函数编写补全后，选择整个 lab1 文件夹作为上下文，提示 AI 插件 "由于加入了一些新的 .c 文件，可能需要修改一些 Makefile 文件，请尝试修改，使项目可以编译并运行"。Cline 将会交替进行终端执行结果读取和代码修改。
+
+    常见问题：
+    1. AI 代码补全时错误地添加（中文）注释，例如`head.S`文件中；
+    2. AI 代码补全后遗留未删除的`#error Unimplemented`等占位符。
 
 ## 其他架构的交叉编译——以 Aarch64 为例
 
